@@ -15,8 +15,19 @@ public final class MyServer extends Thread {
     private int port = 0;
     private Socket clientSocket = null;
 
+    private boolean debug;
+
+    public MyServer() {
+        this.debug = false;
+    }
+    
     public MyServer(int port) {
+        this.debug = false;
         this.port = port;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     @Override
@@ -34,17 +45,29 @@ public final class MyServer extends Thread {
 
     public void openSocket() throws IOException {
         if (this.serverSocket == null) {
-            System.out.println("one");
+            if (debug) {
+                System.out.println("DEBUG: MyServer openSocket() on port " + this.port);
+            }
             this.serverSocket = new ServerSocket(this.port);
             this.serverSocket.setSoTimeout(10000);
-            System.out.println("two");
+            this.clientSocket = this.serverSocket.accept();
+            this.out = new PrintWriter(this.clientSocket.getOutputStream(), true);
+            this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            if (debug) {
+                System.out.println("DEBUG: MyServer openSocket() streams opened ");
+            }
         }
     }
 
     public void writeSocket(String message) throws IOException {
         if (this.out != null) {
+            if (debug) {
+                System.out.println("DEBUG: MyServer writeSocket() ");
+            }
+            this.out.println("<START>");
             this.out.println(message);
             this.out.println("<END>");
+            this.out.flush();
         }
     }
 
@@ -52,30 +75,39 @@ public final class MyServer extends Thread {
     public String readSocket() throws IOException, InterruptedException {
         StringBuilder sb = new StringBuilder();
         String line;
-        
-        this.clientSocket = this.serverSocket.accept();
-        System.out.println("three");
-        this.out = new PrintWriter(this.clientSocket.getOutputStream(), true);
-        System.out.println("four");
-        this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        System.out.println("five");
 
         if (this.in != null) {
-            while ((line = this.in.readLine()) == null) {
-                // waiting for non-null response.
-                Thread.sleep(2000);
+            if (debug) {
+                System.out.println("DEBUG: MyServer readSocket() ");
             }
 
-            // line should contain some response now.
-            sb.append(line);
-
-            if (line.indexOf("<END>") == -1) {
-                // if there is more data, then grab it.
-                while ((line = this.in.readLine()) != null) {
-                    sb.append(line);
-                    if (line.indexOf("<END>") != -1) {
-                        break;
+            while (true) {
+                while ((line = this.in.readLine()) == null) {
+                    // waiting for non-null response.
+                    if (debug) {
+                        System.out.println("DEBUG: MyServer readSocket() WAIT");
                     }
+                    Thread.sleep(3000);
+                }
+                if (line.contains("<START>")) {
+                    if (debug) {
+                        System.out.println("DEBUG: MyServer <START>");
+                    }
+                    break;
+                }
+            }
+
+            while ((line = this.in.readLine()) != null) {
+                if (line.contains("<END>")) {
+                    if (debug) {
+                        System.out.println("DEBUG: MyServer <END>");
+                    }
+                    break;
+                } else {
+                    if (debug) {
+                        System.out.println("DEBUG: MyServer MESSAGE " + line);
+                    }
+                    sb.append(line).append("\n");
                 }
             }
         }
@@ -99,6 +131,9 @@ public final class MyServer extends Thread {
         }
 
         if (this.serverSocket != null) {
+            if (debug) {
+                System.out.println("DEBUG: MyServer closeSocket()");
+            }
             this.serverSocket.close();
             this.serverSocket = null;
         }

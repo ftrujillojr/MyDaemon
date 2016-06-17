@@ -48,9 +48,11 @@ public class MainTest {
                 return args;
             }
         };
-        MyDaemon myDaemon = new MyDaemon();
+        MyDaemon myDaemon = new MyDaemon(8099);
+        myDaemon.setDebug(true);
         
         MyClient myClient = new MyClient("nsglnxdev1.micron.com", 8099);
+        myClient.setDebug(true);
         
         @SuppressWarnings("UnusedAssignment")
         Thread myThread = null;
@@ -58,25 +60,27 @@ public class MainTest {
         try {
             myDaemon.init(daemonContext);
             myDaemon.start();
-            Thread.sleep(2000); // let daemon get rolling.
 
             myThread = myDaemon.getMyThread();
 
 
             if (myThread != null && myThread.isAlive()) {
-                System.out.println("Server is Running ");
-                
                 myClient.openSocket();
                 myClient.writeSocket("Hello world");
                 String response = myClient.readSocket();
-                System.out.println("CLIENT: response " + response);
+                System.out.println("MainTest: response => " + response);
+                
                 
                 myClient.writeSocket("This is 2nd call");
                 response = myClient.readSocket();
-                System.out.println("CLIENT: response " + response);
+                System.out.println("MainTest: response => " + response);
+                myClient.closeSocket();
 
+                
+                Thread.sleep(10000);  // sleep 10 seconds to show Server polling.
 
-                System.out.println("Sending interrupt to kill SERVER");
+                
+                System.out.println("MainTest: Sending interrupt to kill SERVER");
                 myThread.interrupt();
             }
 
@@ -87,7 +91,7 @@ public class MainTest {
         } finally {
             
         }
-        System.out.println("Done.");
+        System.out.println("MainTest: Done.");
 
         assertTrue("simpleClientTest()  FAILED.", passed);
     }

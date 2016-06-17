@@ -13,10 +13,15 @@ public final class MyClient extends Thread {
     private BufferedReader in = null;
     private String host = null;
     private int port = 0;
+    private boolean debug = false;
 
     public MyClient(String host, int port) {
         this.host = host;
         this.port = port;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     @Override
@@ -34,16 +39,27 @@ public final class MyClient extends Thread {
 
     public void openSocket() throws IOException {
         if (this.clientSocket == null) {
+            if (debug) {
+                System.out.println("DEBUG: MyClient openSocket() on port " + this.port);
+            }
             this.clientSocket = new Socket(this.host, this.port);
             this.out = new PrintWriter(this.clientSocket.getOutputStream(), true);
             this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            if (debug) {
+                System.out.println("DEBUG: MyClient openSocket() streams opened");
+            }
         }
     }
 
     public void writeSocket(String message) throws IOException {
         if (this.out != null) {
+            if (debug) {
+                System.out.println("DEBUG: MyClient writeSocket() ");
+            }
+            this.out.println("<START>");
             this.out.println(message);
             this.out.println("<END>");
+            this.out.flush();
         }
     }
 
@@ -53,25 +69,40 @@ public final class MyClient extends Thread {
         String line;
 
         if (this.in != null) {
-            while ((line = this.in.readLine()) == null) {
-                // waiting for non-null response.
-                Thread.sleep(2000);
-
+            if (debug) {
+                System.out.println("DEBUG: MyClient readSocket() ");
+            }
+            while (true) {
+                while ((line = this.in.readLine()) == null) {
+                    // waiting for non-null response.
+                    if (debug) {
+                        System.out.println("DEBUG: MyClient readSocket() WAIT");
+                    }
+                    Thread.sleep(3000);
+                }
+                if (line.contains("<START>")) {
+                    if (debug) {
+                        System.out.println("DEBUG: MyClient <START>");
+                    }
+                    break;
+                }
             }
 
-            // line should contain some response now.
-            sb.append(line);
-
-            if (line.indexOf("<END>") == -1) {
-                // if there is more data, then grab it.
-                while ((line = this.in.readLine()) != null) {
-                    sb.append(line);
-                    if (line.indexOf("<END>") != -1) {
-                        break;
+            while ((line = this.in.readLine()) != null) {
+                if (line.contains("<END>")) {
+                    if (debug) {
+                        System.out.println("DEBUG: MyClient <END>");
                     }
+                    break;
+                } else {
+                    if (debug) {
+                        System.out.println("DEBUG: MyClient MESSAGE " + line);
+                    }
+                    sb.append(line).append("\n");
                 }
             }
         }
+
         return sb.toString();
     }
 
@@ -87,6 +118,9 @@ public final class MyClient extends Thread {
         }
 
         if (this.clientSocket != null) {
+            if (debug) {
+                System.out.println("DEBUG: MyClient closeSocket()");
+            }
             this.clientSocket.close();
             this.clientSocket = null;
         }
