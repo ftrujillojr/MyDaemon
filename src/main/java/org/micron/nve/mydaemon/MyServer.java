@@ -1,26 +1,16 @@
 package org.micron.nve.mydaemon;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
-import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public final class MyServer extends Thread {
 
     private ServerSocket serverSocket = null;
-    private PrintWriter out = null;
-    private BufferedReader in = null;
     private int port = 0;
-    private Socket clientSocket = null;
-
     private boolean debug;
 
-    public MyServer() {
-        this.debug = false;
-    }
-    
     public MyServer(int port) {
         this.debug = false;
         this.port = port;
@@ -43,92 +33,32 @@ public final class MyServer extends Thread {
         }
     }
 
-    public void openSocket() throws IOException {
-        if (this.serverSocket == null) {
+    public void listenSocket() {
+        try {
             if (debug) {
-                System.out.println("DEBUG: MyServer openSocket() on port " + this.port);
+                System.out.println("DEBUG: MyServer openSocket() on port " + this.port + "\n");
             }
             this.serverSocket = new ServerSocket(this.port);
-            this.serverSocket.setSoTimeout(10000);
-            this.clientSocket = this.serverSocket.accept();
-            this.out = new PrintWriter(this.clientSocket.getOutputStream(), true);
-            this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            if (debug) {
-                System.out.println("DEBUG: MyServer openSocket() streams opened ");
-            }
-        }
-    }
-
-    public void writeSocket(String message) throws IOException {
-        if (this.out != null) {
-            if (debug) {
-                System.out.println("DEBUG: MyServer writeSocket() ");
-            }
-            this.out.println("<START>");
-            this.out.println(message);
-            this.out.println("<END>");
-            this.out.flush();
-        }
-    }
-
-    @SuppressWarnings("SleepWhileInLoop")
-    public String readSocket() throws IOException, InterruptedException {
-        StringBuilder sb = new StringBuilder();
-        String line;
-
-        if (this.in != null) {
-            if (debug) {
-                System.out.println("DEBUG: MyServer readSocket() ");
-            }
+            this.serverSocket.setSoTimeout(0);  // accept() will be indefinite timeout if set to zero.
 
             while (true) {
-                while ((line = this.in.readLine()) == null) {
-                    // waiting for non-null response.
-                    if (debug) {
-                        System.out.println("DEBUG: MyServer readSocket() WAIT");
-                    }
-                    Thread.sleep(3000);
+                ClientWorker clientWorker;
+                if (this.debug) {
+                    System.out.println("DEBUG: MyServer listenSocket()");
                 }
-                if (line.contains("<START>")) {
-                    if (debug) {
-                        System.out.println("DEBUG: MyServer <START>");
-                    }
-                    break;
-                }
+                clientWorker = new ClientWorker(this.serverSocket.accept());
+                clientWorker.setDebug(false);
+                
+                Thread t = new Thread(clientWorker);
+                t.start();
             }
-
-            while ((line = this.in.readLine()) != null) {
-                if (line.contains("<END>")) {
-                    if (debug) {
-                        System.out.println("DEBUG: MyServer <END>");
-                    }
-                    break;
-                } else {
-                    if (debug) {
-                        System.out.println("DEBUG: MyServer MESSAGE " + line);
-                    }
-                    sb.append(line).append("\n");
-                }
-            }
+        } catch (IOException ex) {
+            Logger.getLogger(MyServer.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return sb.toString();
+
     }
 
     public void closeSocket() throws IOException {
-        if (this.in != null) {
-            this.in.close();
-            this.in = null;
-        }
-
-        if (this.out != null) {
-            this.out.close();
-            this.out = null;
-        }
-
-        if (this.clientSocket != null) {
-            this.clientSocket.close();
-            this.clientSocket = null;
-        }
 
         if (this.serverSocket != null) {
             if (debug) {
@@ -139,4 +69,19 @@ public final class MyServer extends Thread {
         }
     }
 
+    @Override
+    @SuppressWarnings("FinalizeDeclaration")
+    protected void finalize() {
+        try {
+            this.closeSocket();
+        } catch (IOException ex) {
+            Logger.getLogger(MyServer.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                super.finalize();
+            } catch (Throwable ex) {
+                Logger.getLogger(MyServer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
 }

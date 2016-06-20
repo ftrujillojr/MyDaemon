@@ -4,31 +4,19 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.ConnectException;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class MyClient extends Thread {
+public class ClientWorker extends Thread {
 
     private Socket clientSocket = null;
     private PrintWriter out = null;
     private BufferedReader in = null;
-    private String host = null;
-    private int port = 0;
     private boolean debug = false;
-    private int readTimeoutMilliseconds = 0;
 
-    public MyClient(String host, int port) {
-        this.host = host;
-        this.port = port;
-        this.readTimeoutMilliseconds = 0; // Infinite read
-    }
-
-    public MyClient(String host, int port, int readTimeoutMilliseconds) {
-        this.host = host;
-        this.port = port;
-        this.readTimeoutMilliseconds = readTimeoutMilliseconds;
+    public ClientWorker(Socket clientSocket) {
+        this.clientSocket = clientSocket;
     }
 
     public void setDebug(boolean debug) {
@@ -48,31 +36,33 @@ public final class MyClient extends Thread {
         }
     }
 
-    private void openSocket() throws IOException {
-        if (this.clientSocket == null) {
-            if (debug) {
-                System.out.println("DEBUG: MyClient openSocket() on port " + this.port);
+    @Override
+    public void run() {
+        StringBuilder responseString = new StringBuilder();
+        String line;
+
+        try {
+            if (this.debug) {
+                System.out.println("DEBUG: ClientWorker running..." + this);
             }
-            try {
-                this.clientSocket = new Socket(this.host, this.port);
-            } catch (ConnectException ex) {
-                System.out.println("ERROR: Could not connect to host " + host + " port " + port);
-                throw ex;
-            }
-            this.clientSocket.setSoTimeout(readTimeoutMilliseconds);
-            this.out = new PrintWriter(this.clientSocket.getOutputStream(), true);
-            this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            if (debug) {
-                System.out.println("DEBUG: MyClient openSocket() streams opened");
-            }
+            this.openSocketStreams();
+            String requestString = this.readSocket();
+
+            // do something with requestString.  In this case, prepend RESPONSE: and return data.
+            responseString.append("RESPONSE: ").append(requestString).append("\n");
+
+            this.writeSocket(responseString.toString());
+            this.closeSocket();
+        } catch (IOException | InterruptedException ex) {
+            Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
+
     }
 
-    public void writeSocket(String message) throws IOException {
-        if (this.out == null) {
-            this.openSocket();
+    private void writeSocket(String message) throws IOException {
+        if (this.out != null) {
             if (debug) {
-                System.out.println("DEBUG: MyClient writeSocket() ");
+                System.out.println("DEBUG: ClientWorker writeSocket() ");
             }
             this.out.println("<START>");
             this.out.println(message);
@@ -81,26 +71,37 @@ public final class MyClient extends Thread {
         }
     }
 
+    private void openSocketStreams() throws IOException {
+        if (this.clientSocket != null) {
+            this.out = new PrintWriter(this.clientSocket.getOutputStream(), true);
+            this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            if (debug) {
+                System.out.println("DEBUG: ClientWorker openSocket() streams opened ");
+            }
+        }
+    }
+
     @SuppressWarnings("SleepWhileInLoop")
-    public String readSocket() throws IOException, InterruptedException {
+    private String readSocket() throws IOException, InterruptedException {
         StringBuilder sb = new StringBuilder();
         String line;
 
         if (this.in != null) {
             if (debug) {
-                System.out.println("DEBUG: MyClient readSocket() ");
+                System.out.println("DEBUG: ClientWorker readSocket() ");
             }
+
             while (true) {
                 while ((line = this.in.readLine()) == null) {
                     // waiting for non-null response.
                     if (debug) {
-                        System.out.println("DEBUG: MyClient readSocket() WAIT");
+                        System.out.println("DEBUG: ClientWorker readSocket() WAIT");
                     }
                     Thread.sleep(3000);
                 }
                 if (line.contains("<START>")) {
                     if (debug) {
-                        System.out.println("DEBUG: MyClient <START>");
+                        System.out.println("DEBUG: ClientWorker <START>");
                     }
                     break;
                 }
@@ -109,22 +110,19 @@ public final class MyClient extends Thread {
             while ((line = this.in.readLine()) != null) {
                 if (line.contains("<END>")) {
                     if (debug) {
-                        System.out.println("DEBUG: MyClient <END>");
+                        System.out.println("DEBUG: ClientWorker <END>");
                     }
                     break;
                 } else {
                     if (debug) {
-                        System.out.println("DEBUG: MyClient MESSAGE =>" + line + "<= ");
+                        System.out.println("DEBUG: ClientWorker MESSAGE " + line);
                     }
                     if (line.equals("") == false) {
                         sb.append(line).append("\n");
                     }
                 }
             }
-
-            this.closeSocket();
         }
-
         return sb.toString();
     }
 
@@ -140,11 +138,11 @@ public final class MyClient extends Thread {
         }
 
         if (this.clientSocket != null) {
-            if (debug) {
-                System.out.println("DEBUG: MyClient closeSocket()");
-            }
             this.clientSocket.close();
             this.clientSocket = null;
+            if (debug) {
+                System.out.println("DEBUG: ClientWorker closeSocket()");
+            }
         }
     }
 
@@ -163,5 +161,4 @@ public final class MyClient extends Thread {
             }
         }
     }
-
 }

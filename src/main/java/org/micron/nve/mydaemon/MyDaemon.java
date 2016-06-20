@@ -53,31 +53,9 @@ public final class MyDaemon implements Daemon {
 
             @Override
             public void run() {
-                try {
-                    myServer.openSocket();
-                } catch (IOException ex) {
-                    Logger.getLogger(MyDaemon.class.getName()).log(Level.SEVERE, null, ex);
-                }
-
-                while (!stopped) {
-                    try {
-                        String inputResponse = myServer.readSocket();
-
-                        // do something with inputResponse.  I'm just prepending *** OUT: and sending back.
-                        String outputResponse = " *** OUT: " + inputResponse;
-
-                        myServer.writeSocket(outputResponse);
-
-                    } catch (InterruptedException ex) {
-                        System.out.println("Caught  InterruptedException.");
-                        System.out.println(ex.getMessage());
-                        stopped = true;
-                    } catch (IOException ex) {
-                        System.out.println("Caught IOException");
-                        System.out.println(ex.getMessage());
-                        stopped = true;
-                    }
-                }
+                
+                myServer.listenSocket(); // This has a while(true) loop
+                
                 try {
                     myServer.closeSocket();
                 } catch (IOException ex) {
