@@ -118,7 +118,7 @@ public class MainTest {
                 String response1 = myClient.readSocket();
 
                 // ASSERT
-                System.out.println("test1() " + response1);
+                //System.out.println("test1() " + response1);
                 assertEquals(expect1, response1);
             } catch (InterruptedException | IOException ex) {
                 Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, ex);
@@ -143,7 +143,7 @@ public class MainTest {
             String response1 = myClient.readSocket();
 
             // ASSERT
-            System.out.println("simpleClientTest() " + response1);
+            //System.out.println("simpleClientTest() " + response1);
             assertEquals(expect1, response1);
 
             /////////////////////////////////////////////////////
@@ -159,7 +159,7 @@ public class MainTest {
             String response2 = myClient.readSocket();
 
             // ASSERT
-            System.out.println("simpleClientTest() " + response2);
+            //System.out.println("simpleClientTest() " + response2);
             assertEquals(expect2, response2);
 
         } catch (InterruptedException | IOException ex) {
@@ -187,7 +187,7 @@ public class MainTest {
                 String response1 = myClient.readSocket();
 
                 // ASSERT
-                System.out.println("test2() " + response1);
+                //System.out.println("test2() " + response1);
                 assertEquals(expect1, response1);
             } catch (InterruptedException | IOException ex) {
                 Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, ex);
