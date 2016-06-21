@@ -5,17 +5,18 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ClientWorker extends Thread {
+public class MyClientWorker extends Thread {
 
     private Socket clientSocket = null;
     private PrintWriter out = null;
     private BufferedReader in = null;
     private boolean debug = false;
 
-    public ClientWorker(Socket clientSocket) {
+    public MyClientWorker(Socket clientSocket) {
         this.clientSocket = clientSocket;
     }
 
@@ -48,15 +49,25 @@ public class ClientWorker extends Thread {
             this.openSocketStreams();
             String requestString = this.readSocket();
 
+//            if (this.debug) {
+                System.err.println("REQUEST: " + requestString);
+                System.err.flush();
+//            }
+
             // do something with requestString.  In this case, prepend RESPONSE: and return data.
             responseString.append("RESPONSE: ").append(requestString).append("\n");
 
             this.writeSocket(responseString.toString());
             this.closeSocket();
         } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(ClientWorker.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(MyClientWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+    }
+
+    private int generateRandomNumberInclusive(int low, int high) {
+        Random r = new Random();
+        return (r.nextInt((high + 1) - low) + low);
     }
 
     private void writeSocket(String message) throws IOException {

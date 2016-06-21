@@ -53,10 +53,13 @@ public class MainTest {
     private static Thread myThread = null;
 
     // CLIENT / SERVER
+    @SuppressWarnings("FieldMayBeFinal")
     private static int port = 8099;
 
     // CLIENT
+    @SuppressWarnings("FieldMayBeFinal")
     private static String host = "nsglnxdev1.micron.com";
+    @SuppressWarnings("FieldMayBeFinal")
     private static int readTimeoutMilliseconds = 10000;
 
     public MainTest() {
@@ -118,7 +121,7 @@ public class MainTest {
                 String response1 = myClient.readSocket();
 
                 // ASSERT
-                //System.out.println("test1() " + response1);
+                System.err.println("test1() " + response1);
                 assertEquals(expect1, response1);
             } catch (InterruptedException | IOException ex) {
                 Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, ex);
@@ -143,7 +146,7 @@ public class MainTest {
             String response1 = myClient.readSocket();
 
             // ASSERT
-            //System.out.println("simpleClientTest() " + response1);
+            System.err.println("simpleClientTest() " + response1);
             assertEquals(expect1, response1);
 
             /////////////////////////////////////////////////////
@@ -159,14 +162,15 @@ public class MainTest {
             String response2 = myClient.readSocket();
 
             // ASSERT
-            //System.out.println("simpleClientTest() " + response2);
+            System.err.println("simpleClientTest() " + response2);
             assertEquals(expect2, response2);
 
         } catch (InterruptedException | IOException ex) {
             Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, ex);
         }
+
     }
-    
+
     @Test
     public void test2() {
         MyClient myClient = new MyClient(host, port, readTimeoutMilliseconds);
@@ -187,13 +191,11 @@ public class MainTest {
                 String response1 = myClient.readSocket();
 
                 // ASSERT
-                //System.out.println("test2() " + response1);
+                System.err.println("test2() " + response1);
                 assertEquals(expect1, response1);
             } catch (InterruptedException | IOException ex) {
                 Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-
     }
-
 }

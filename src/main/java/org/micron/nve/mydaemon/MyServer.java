@@ -42,11 +42,11 @@ public final class MyServer extends Thread {
             this.serverSocket.setSoTimeout(0);  // accept() will be indefinite timeout if set to zero.
 
             while (true) {
-                ClientWorker clientWorker;
+                MyClientWorker clientWorker;
                 if (this.debug) {
                     System.out.println("DEBUG: MyServer listenSocket()");
                 }
-                clientWorker = new ClientWorker(this.serverSocket.accept());
+                clientWorker = new MyClientWorker(this.serverSocket.accept());
                 clientWorker.setDebug(false);
                 
                 Thread t = new Thread(clientWorker);
